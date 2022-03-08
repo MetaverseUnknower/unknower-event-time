@@ -1,0 +1,12 @@
+version: '3.7'
+
+services:
+
+  world-clock:
+    container_name: world-clock
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '80:80'
