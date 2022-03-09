@@ -2,9 +2,9 @@
   <v-container>
     <v-row class="text-center">
       <v-spacer></v-spacer>
-      <v-col cols="12" md="6" sm="8" xs="12">
+      <v-col cols="12" md="8" sm="10" xs="12">
         <v-card class="pa-4">
-          <div class="text-h3 text-sm-h2 font-weight-bold">UTC</div>
+          <div class="text-h3 text-sm-h2 text-xs-h3 font-weight-bold">UTC</div>
           <div class="text-h2 text-sm-h1">{{ utc }}</div>
         </v-card>
       </v-col>
@@ -12,30 +12,30 @@
     </v-row>
 
     <v-row class="text-center">
-      <v-col  cols="12" md="6" sm="8" xs="12" class="mx-auto">
-        <div class="next text-md-h5 text-sm-h5 font-weight-bold" v-if="nextShow">
-          NEXT UNKNOWER EVENT IS {{ timeFromNow }}<br />
-        </div>
-        <v-card v-if="nextShow" class="pa-4 mt-4">
-          <div class="text-uppercase date text-md-h4 text-sm-h4 font-weight-bold">
-            {{ nextShow.name }}
-          </div>
-          <div class="text-uppercase date text-md-h4 text-sm-h4 font-weight-bold">
-            {{ displayedTime }}
+      <v-col cols="12" md="8" sm="10" xs="12" class="mx-auto">
+        <div class="next text-md-h5 text-sm-h5 text-xs-h6 font-weight-bold" v-if="nextDayOfEvents">{{ nextEventText }} {{ timeFromNow }}<br /></div>
+        <v-card v-if="nextDayOfEvents">
+          <div v-for="event in nextDayOfEvents" class="pa-4 mt-4" :key="event.id">
+            <div class="text-uppercase date text-md-h5 text-sm-h6 text-xs-h6 font-weight-bold">
+              {{ event.name }}
+            </div>
+            <div class="text-uppercase date text-md-h5 text-sm-h6 text-xs-h6 font-weight-bold">
+              {{ event.displayedTime }}
+            </div>
           </div>
         </v-card>
-        <div class="next text-md-h4 text-sm-h4" v-if="!nextShow">NO UPCOMING EVENTS</div>
-        <div class="next mt-6 text-md-h6 text-sm-h6" v-if="!nextShow">TO SCHEDULE AN EVENT:</div>
-        <div class="next my-1 text-md-h6 text-sm-h6" v-if="!nextShow">BOOKING@UNKNOWER.COM</div>
-        <div class="my-1 text-md-h6 text-sm-h6" v-if="!nextShow">Unknower#0677 ON DISCORD</div>
+        <div class="next text-md-h4 text-sm-h4" v-if="!nextDayOfEvents">NO UPCOMING EVENTS</div>
+        <div class="next mt-6 text-md-h6 text-sm-h6" v-if="!nextDayOfEvents">TO SCHEDULE AN EVENT:</div>
+        <div class="next my-1 text-md-h6 text-sm-h6" v-if="!nextDayOfEvents">BOOKING@UNKNOWER.COM</div>
+        <div class="my-1 text-md-h6 text-sm-h6" v-if="!nextDayOfEvents">Unknower#0677 ON DISCORD</div>
       </v-col>
     </v-row>
-    <v-row class="text-center" v-if="nextShow">
+    <v-row class="text-center" v-if="nextDayOfEvents">
       <v-col sm="6" xs="12" class="mx-auto pa-1">
         <div class="text-xs-h6">Showing {{ selectedTimezone }} Timezone</div>
         <v-btn v-if="!switchingTz" @click="switchingTz = true" class="my-6 mx-auto">Change Timezone</v-btn>
         <v-autocomplete
-          v-if="nextShow && switchingTz"
+          v-if="nextDayOfEvents && switchingTz"
           v-model="selectedTimezone"
           :items="timezoneList"
           label="Switch Timezone"
@@ -64,6 +64,8 @@ export default {
     now: moment().toISOString(),
     utc: moment().tz("UTC").format("H:mm:ss"),
     events: [],
+    nextDayOfEvents: [],
+    nextEventText: "",
     nextShow: "",
     switchingTz: false,
     selectedTimezone: moment.tz.guess(),
@@ -84,7 +86,7 @@ export default {
     },
   },
   watch: {
-    nextShow: function () {},
+    upcomingEvent: function () {},
   },
   methods: {
     toggleDarkMode: function () {
@@ -108,9 +110,15 @@ export default {
           });
           console.log(this.futureEvents);
           if (this.futureEvents) {
-            this.nextShow = this.futureEvents[0];
-            this.displayedTime = moment(this.futureEvents[0].startTime).format("LLL");
-            this.timeFromNow = moment(this.futureEvents[0].startTime).fromNow();
+            this.closestEvent = this.futureEvents[0];
+            this.nextDayOfEvents = this.futureEvents.filter((event) => event.eventGroup == this.closestEvent.eventGroup);
+
+            this.timeFromNow = moment(this.closestEvent.startTime).fromNow();
+            this.nextDayOfEvents.forEach((event) => {
+              event.displayedTime = moment(event.startTime).format("LLL");
+            });
+
+            this.getNextEventText()
           }
         });
     },
@@ -133,9 +141,16 @@ export default {
     switchTimezone: function () {
       this.switchingTz = false;
       console.log(this.selectedTimezone);
-      this.displayedTime = moment(this.futureEvents[0].startTime)
-        .tz(this.selectedTimezone)
-        .format("LLL");
+      this.displayedTime = moment(this.futureEvents[0].startTime).tz(this.selectedTimezone).format("LLL");
+    },
+    getNextEventText: function () {
+      if (this.nextDayOfEvents.length > 1) {
+        this.nextEventText = "NEXT UNKNOWER EVENTS START ";
+      } else if (this.nextDayOfEvents.length < 2) {
+        this.nextEventText = "NEXT UNKNOWER EVENT STARTS ";
+      } else {
+        return "";
+      }
     },
   },
 };
